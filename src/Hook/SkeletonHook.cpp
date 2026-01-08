@@ -81,7 +81,7 @@ namespace Hook
 
     void SetFreezeActor(const RE::Actor* actor, bool isFrozen) { 
         if (isFrozen) {
-            // 
+            // 待完善
         }
     }
 }
