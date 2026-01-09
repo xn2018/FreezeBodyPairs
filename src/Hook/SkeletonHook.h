@@ -12,7 +12,6 @@ namespace Hook {
 	};
 
 	static std::unordered_map<const RE::Actor*, FrozenActorData> g_frozenActors;
-	static std::mutex g_mutex;
     inline std::atomic<RE::NiNode*> g_playerRoot{nullptr};
 
 	static void hkbClipGenerator_Generate(
@@ -31,4 +30,5 @@ namespace Hook {
 
     void Install();
     void SetFreezeActor(const RE::Actor* player, bool isFrozen);
+    static bool IsFrozen(RE::Actor* actor);
 }

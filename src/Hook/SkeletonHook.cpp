@@ -22,6 +22,9 @@ namespace Hook
     using NiAVObject = RE::NiAVObject;
     using NiNode = RE::NiNode;
 
+    static std::unordered_map<RE::FormID, bool> _actorFrozenMap;
+    static std::shared_mutex _mutex;
+
     static inline REL::Relocation<decltype(hkbClipGenerator_Generate)> _hkbClipGenerator_Generate;
 
     static RE::BShkbAnimationGraph* GetGraphFromGenerator(RE::hkbClipGenerator* gen) {
@@ -40,7 +43,7 @@ namespace Hook
         RE::hkbGeneratorOutput& out, 
         float a_timeOffset){
 
-
+        _hkbClipGenerator_Generate(gen, ctx, activeChildrenOutput, out, a_timeOffset);
         // if the animation is not fully loaded yet, call generate with our fake clip generator containing the previous
         // animation instead - this avoids seeing the reference pose for a frame
         if (gen->userData != 0xC) {
@@ -53,12 +56,15 @@ namespace Hook
             return _hkbClipGenerator_Generate(gen, ctx, activeChildrenOutput, out, a_timeOffset);
         }
 
+        RE::Actor* player = RE::PlayerCharacter::GetSingleton();
+
+        if (!IsFrozen(player)) {
+            return _hkbClipGenerator_Generate(gen, ctx, activeChildrenOutput, out, a_timeOffset);
+        }
+
         // 2. 缓存骨骼旋转
         auto* mgr = Utils::FreezeBoneManager::GetSingleton();
         mgr->EnsureCache(graph);
-
-        // 先生成动画
-        _hkbClipGenerator_Generate(gen, ctx, activeChildrenOutput, out, a_timeOffset);
 
         // 冻结阶段（示意）
         const std::uint16_t boneCount = graph->numAnimBones;
@@ -79,9 +85,30 @@ namespace Hook
         _hkbClipGenerator_Generate = hkbClipGeneratorVtbl.write_vfunc(0x17, hkbClipGenerator_Generate);
     }
 
-    void SetFreezeActor(const RE::Actor* actor, bool isFrozen) { 
-        if (isFrozen) {
-            // 待完善
+    void SetFreezeActor(const RE::Actor* actor, bool frozen) { 
+        if (!actor) {
+            return;
         }
+
+        const auto formID = actor->GetFormID();
+
+        std::unique_lock lock(_mutex);
+
+        if (frozen) {
+            _actorFrozenMap[formID] = true;
+        } else {
+            _actorFrozenMap.erase(formID);
+        }
+    }
+
+    static bool IsFrozen(RE::Actor* actor) {
+        if (!actor) {
+            return false;
+        }
+
+        const auto formID = actor->GetFormID();
+
+        std::shared_lock lock(_mutex);
+        return _actorFrozenMap.contains(formID);
     }
 }
