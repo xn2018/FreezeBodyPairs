@@ -1,7 +1,7 @@
-// Hook/ActorDeathEventSink.cpp
+﻿// Hook/ActorDeathEventSink.cpp
 
 #include "ActorDeathEventSink.h"
-#include "SkeletonHook.h"
+#include "Hook.h"
 #include "Utils/BoneUtils.h"
 
 namespace Hook
@@ -18,13 +18,9 @@ namespace Hook
         if (!evn || !evn->actorDying)
             return RE::BSEventNotifyControl::kContinue;
 
-        const RE::Actor* actor = evn->actorDying->As<RE::Actor>();
+        RE::Actor* actor = evn->actorDying->As<RE::Actor>();
         if (!actor)
             return RE::BSEventNotifyControl::kContinue;
-
-        // 清理 Freeze 状态
-        Utils::BoneUtils::ClearCachedTransforms(actor);
-        Hook::SetFreezeActor(actor, false);
 
         return RE::BSEventNotifyControl::kContinue;
     }

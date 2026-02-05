@@ -29,16 +29,18 @@ set(sources
         src/HitCounterManager.cpp
         src/Main.cpp
 
-        src/Hook/SkeletonHook.cpp
+        src/Hook/Hook.cpp
         src/Hook/Actor3DIndex.cpp
         src/Hook/ActorAnimationEventSink.cpp
         src/Hook/ActorDeathEventSink.cpp
         src/Hook/ActorUnloadEventSink.cpp
         src/Hook/ActorLifecycleManager.cpp
-        
+        src/Hook/EquipmentHook.cpp
+
+        src/logic/ClipBoneMap.cpp
+
         src/Utils/BoneUtils.cpp
-        src/Utils/FreezeBoneManager.cpp
-        src/Utils/HavokPose.cpp
+        src/Utils/FreezeManager.cpp
 
         src/Input/InputHook.cpp
         src/Input/InputChordDetector.cpp

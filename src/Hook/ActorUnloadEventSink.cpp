@@ -1,8 +1,6 @@
-// Hook/ActorDeathEventSink.cpp
+﻿// Hook/ActorDeathEventSink.cpp
 
 #include "ActorUnloadEventSink.h"
-#include "SkeletonHook.h"
-#include "Utils/BoneUtils.h"
 
 namespace Hook
 {
@@ -19,9 +17,6 @@ namespace Hook
         auto* ref = RE::TESForm::LookupByID(evn->formID);
         auto* actor = ref ? ref->As<RE::Actor>() : nullptr;
         if (!actor) return RE::BSEventNotifyControl::kContinue;
-
-        Utils::BoneUtils::ClearCachedTransforms(actor);
-        Hook::SetFreezeActor(actor, false);
 
         return RE::BSEventNotifyControl::kContinue;
     }

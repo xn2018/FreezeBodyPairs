@@ -3,6 +3,12 @@
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
+namespace hash {
+    constexpr std::uint32_t fnv1a_32(const char* str, std::uint32_t h = 0x811C9DC5) {
+        return (*str == 0) ? h : fnv1a_32(str + 1, (h ^ std::uint32_t(*str)) * 0x01000193);
+    }
+}
+
 namespace Hook {
     static std::mutex g_animMutex;
     class ActorAnimationEventSink : public RE::BSTEventSink<RE::BSAnimationGraphEvent> {

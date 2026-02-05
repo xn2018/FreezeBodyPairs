@@ -22,14 +22,17 @@ namespace Hook
         // Actor 生命周期终点
         void OnActorDestroyed(const RE::Actor* actor);
 
-        // AnimationGraph 回调
-        void OnActor3DLoaded(const RE::Actor* actor);
+        // Actor 的 3D / Skeleton 已经可用
+        static void OnActor3DLoaded(const RE::Actor* actor);
+
+        // 可选：Actor 即将卸载 3D
+        static void OnActor3DUnloaded(const RE::Actor* actor);
 
     private:
         void RegisterAnimationGraph(const RE::Actor* actor);
         void UnregisterAnimationGraph(const RE::Actor* actor);
 
-        std::unordered_set<const RE::Actor*> _tracked;
+        std::unordered_set<RE::FormID> _tracked;
         std::mutex _lock;
     };
 }

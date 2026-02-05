@@ -1,99 +1,96 @@
-﻿// Utils/BoneUtils.cpp
-#include "BoneUtils.h"
+﻿#include "Utils/BoneUtils.h"
+#include "Logic/ClipBoneMap.h"
+#include "RE/N/NiTransform.h"
 
-#include <unordered_map>
-#include <stack>
-#include <fstream>
-#include "nlohmann/json.hpp"
+using namespace SKSE;
+using namespace SKSE::log;
 
-#include "Input/InputHook.h"
+namespace Utils::BoneUtils {
+    // ------------------------------------------------------------
+    // Skeleton
+    // ------------------------------------------------------------
 
-namespace Utils::BoneUtils
-{
-    using json = nlohmann::json;
-    // 深度遍历 skeleton，构建 name → NiNode*
-    static void BuildNameMap(RE::NiNode* root, std::unordered_map<std::string, RE::NiNode*>& out)
-    {
-        if (!root)
+    RE::NiNode* GetSkeletonRoot(const RE::Actor* actor) noexcept {
+        if (!actor) {
+            return nullptr;
+        }
+
+        const auto& biped = actor->GetBiped();
+        if (!biped) {
+            return nullptr;
+        }
+
+        // NG 中第三人称骨架的唯一稳定入口
+        auto* root = biped->root;
+        return root ? root->AsNode() : nullptr;
+    }
+     
+    // ------------------------------------------------------------
+    // Bone lookup
+    // ------------------------------------------------------------
+
+    RE::NiAVObject* FindBone(RE::NiNode* skeletonRoot, std::string_view boneName) noexcept {
+        if (!skeletonRoot || boneName.empty()) {
+            return nullptr;
+        }
+
+        // 注意：GetObjectByName 使用 BSFixedString
+        return skeletonRoot->GetObjectByName(RE::BSFixedString(boneName.data()));
+    }
+
+    void BoneTransformManager::CaptureFootBones(RE::PlayerCharacter* a_player) {
+        if (!a_player || !a_player->Get3D()) {
+            log::warn("Cannot capture foot bones - player or 3D model is null");
             return;
+        }
 
-        std::stack<RE::NiNode*> st;
-        st.push(root);
+        m_footBoneTransforms.clear();
+        auto root = a_player->Get3D();
 
-        while (!st.empty()) {
-            auto* n = st.top();
-            st.pop();
+        for (const auto& boneName : m_footBoneNames) {
+            auto bone = root->GetObjectByName(boneName);
+            if (bone) {
+                BoneTransform transform;
+                transform.position = bone->local.translate;
+                transform.rotation = bone->local.rotate;
+                transform.scale = bone->local.scale;
 
-            if (n->name.c_str()) {
-                out.emplace(n->name.c_str(), n);
+                m_footBoneTransforms[boneName] = transform;
+                log::trace("Captured bone: {} at pos({}, {}, {})", boneName, transform.position.x,
+                              transform.position.y, transform.position.z);
+            } else {
+                log::warn("Could not find bone: {}", boneName);
             }
+        }
 
-            for (auto& c : n->GetChildren()) {
-                if (auto* cn = c ? c->AsNode() : nullptr) {
-                    st.push(cn);
-                }
+        m_hasCapturedBones = !m_footBoneTransforms.empty();
+        log::info("Captured {} foot bones", m_footBoneTransforms.size());
+
+        if (!m_hasCapturedBones) {
+            log::error("Failed to capture any foot bones! Check if bone names match your skeleton.");
+        }
+    }
+
+    void BoneTransformManager::RestoreFootBones(RE::PlayerCharacter* a_player) {
+        if (!a_player || !a_player->Get3D() || m_footBoneTransforms.empty()) {
+            return;
+        }
+
+        auto root = a_player->Get3D();
+
+        for (const auto& [boneName, transform] : m_footBoneTransforms) {
+            auto bone = root->GetObjectByName(boneName);
+            if (bone) {
+                // Restore the captured transform
+                bone->local.translate = transform.position;
+                bone->local.rotate = transform.rotation;
+                bone->local.scale = transform.scale;
             }
         }
     }
 
-    std::optional<std::uint16_t> FindBoneIndexByName(RE::BShkbAnimationGraph* graph, std::string_view boneName) {
-        if (!graph || boneName.empty()) {
-            return std::nullopt;
-        }
-
-        const std::uint16_t count = graph->numAnimBones;
-
-        for (std::uint16_t i = 0; i < count; ++i) {
-            const auto& entry = graph->boneNodes[i];
-            if (!entry.node) {
-                continue;
-            }
-
-            const auto& name = entry.node->name;
-            if (name.empty()) {
-                continue;
-            }
-
-            // case-insensitive compare
-            if (_stricmp(name.c_str(), boneName.data()) == 0) {
-                return i;
-            }
-        }
-
-        return std::nullopt;
-    }
-
-    static void CollectChildBones(RE::BShkbAnimationGraph* graph, std::uint16_t root,
-                                  std::unordered_set<std::uint16_t>& out) {
-        if (!out.insert(root).second) return;
-
-        const std::uint16_t count = graph->numAnimBones;
-
-        for (std::uint16_t i = 0; i < count; ++i) {
-            if (graph->boneNodes[i].node->parentIndex == root) {
-                CollectChildBones(graph, i, out);
-            }
-        }
-    }
-
-    // ===== Actor 查找（示例实现，按你工程已有逻辑替换）=====
-    RE::Actor* GetActorFromNode(RE::NiNode* node)
-    {
-        // 常见做法：向上找 skeleton root 的 user data / owner
-        // 这里给一个安全占位实现（假定你已有稳定实现）
-        auto* root = node;
-        while (root && root->parent) {
-            root = root->parent->AsNode();
-        }
-        // TODO: 根据你工程中既有方式返回 Actor
-        return nullptr;
-    }
-
-    void ClearCachedTransforms(const RE::Actor* actor) {
-
-    }
-
-    void RebuildFrozenBones(const RE::Actor* actor) {
-
+    void BoneTransformManager::Clear() {
+        m_footBoneTransforms.clear();
+        m_hasCapturedBones = false;
     }
 }

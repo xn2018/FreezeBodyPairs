@@ -3,7 +3,7 @@
 #include <string>
 #include "Utils/BoneUtils.h"
 #include "Config.h"
-#include "Hook/SkeletonHook.h"
+#include "Hook.h"
 #include "Hook/ActorLifecycleManager.h"
 
 namespace Input {
@@ -59,14 +59,9 @@ namespace Input {
         }
 
         if (doToggle) {
-            RE::Actor* player = RE::PlayerCharacter::GetSingleton();
+            auto player = RE::PlayerCharacter::GetSingleton();
             if (player) {
-                Hook::SetFreezeActor(player, _frozen);
-                if (_frozen) {
-                    Hook::ActorLifecycleManager::GetSingleton().OnActorFrozen(player);
-                } else {
-                    Hook::ActorLifecycleManager::GetSingleton().OnActorUnfrozen(player);
-                }
+                Hook::ToggleFootFreeze(player, _frozen);
             }
         }
 

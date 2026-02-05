@@ -19,6 +19,7 @@ namespace Hook {
         // 根据 skeleton root 查 actor
         RE::Actor* GetActorByRoot(RE::NiAVObject* root) noexcept;
 
+        static void On3DLoaded(const RE::Actor* actor);
         // 清空（插件卸载等）
         void Clear() noexcept;
 

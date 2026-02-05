@@ -108,4 +108,4 @@ namespace Common {
         std::unordered_set<RE::Actor*> _trackedActors;
     };
 #pragma warning(pop)
-}  // namespace Sample
+}  // namespace Common

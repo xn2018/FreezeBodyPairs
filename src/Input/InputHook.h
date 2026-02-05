@@ -8,7 +8,7 @@
 #include "Utils/BoneUtils.h"  // 你需要实现的骨骼工具
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
-#include "Hook/SkeletonHook.h"  // 你的 Hooks::SetFreezeActor 声明
+#include "Hook.h"  // 你的 Hooks::SetFreezeActor 声明
 #include "Input/InputChordDetector.h"
 
 namespace Input {

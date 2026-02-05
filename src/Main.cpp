@@ -3,9 +3,9 @@
 #include "Config.h"
 #include "Papyrus.h"
 
-#include <stddef.h>
+#include <cstddef>
 #include "fmt_rel_version.h"
-#include "Hook/SkeletonHook.h"
+#include "Hook.h"
 #include "Hook/ActorLifecycleManager.h"
 #include "Input/InputHook.h"
 
@@ -175,7 +175,7 @@ namespace {
                         {
                             InitializeHooking();
                             // 加载配置
-                            Hook::Install();
+                            Hook::PlayerCharacterHook::Install();
                             break;
                         }
 

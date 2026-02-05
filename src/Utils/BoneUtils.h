@@ -8,24 +8,48 @@
 #include "RE/A/Actor.h"
 #include "RE/N/NiNode.h"
 
-namespace RE {
-    class BShkbAnimationGraph;
-}
-
 namespace Utils::BoneUtils {
-    // ------------------------------------------------------------
-    // Bone index helpers (NO STATE, NO CACHE)
-    // ------------------------------------------------------------
+    // 1. 解析角色第三人称骨架根节点
+    RE::NiNode* GetSkeletonRoot(const RE::Actor* actor) noexcept;
+    // 返回“空骨骼列表”（语义：不冻结任何骨骼）
+    
+    // 2. 在骨架中按名称查找骨骼
+    RE::NiAVObject* FindBone(RE::NiNode* skeletonRoot, std::string_view boneName) noexcept;
 
-    std::optional<std::uint16_t> FindBoneIndexByName(RE::BShkbAnimationGraph* graph, std::string_view boneName);
+    struct FrozenBoneState {
+        RE::NiAVObject* bone;
+        RE::stl::enumeration<RE::NiAVObject::Flag, std::uint32_t> originalFlags;
+    };
 
-    void CollectChildBones(RE::BShkbAnimationGraph* graph, std::uint16_t root, std::unordered_set<std::uint16_t>& out);
-    void ClearCachedTransforms(const RE::Actor* actor);
-    void RebuildFrozenBones(const RE::Actor* actor);
-    // ------------------------------------------------------------
-    // Scene graph helpers
-    // ------------------------------------------------------------
+    static std::unordered_map<RE::NiAVObject*, FrozenBoneState> _frozenBones;
+    static std::mutex _freezeLock;
 
-    // Best-effort helper: find owning Actor from any NiNode
-    RE::Actor* GetActorFromNode(RE::NiNode* node);
-}  // namespace Utils::BoneUtils
+    // Store original bone transforms for foot bones
+    class BoneTransformManager {
+    public:
+        static BoneTransformManager* GetSingleton() {
+            static BoneTransformManager singleton;
+            return &singleton;
+        }
+
+        void CaptureFootBones(RE::PlayerCharacter* a_player);
+        void RestoreFootBones(RE::PlayerCharacter* a_player);
+        bool HasCapturedBones() const { return m_hasCapturedBones; }
+        void Clear();
+
+    private:
+        BoneTransformManager() = default;
+
+        struct BoneTransform {
+            RE::NiPoint3 position;
+            RE::NiMatrix3 rotation;
+            float scale;
+        };
+
+        std::unordered_map<std::string, BoneTransform> m_footBoneTransforms;
+        bool m_hasCapturedBones = false;
+
+        // Foot bone names (commonly used in Skyrim skeletons)
+        const std::vector<std::string> m_footBoneNames = {"NPC L Foot [Lft ]", "NPC R Foot [Rft ]","NPC L Toe0 [LToe]", "NPC R Toe0 [RToe]",};
+    };
+}
